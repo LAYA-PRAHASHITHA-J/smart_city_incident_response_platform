@@ -1,0 +1,16 @@
+# ai-service/requirements.txt
+
+# Core Web Framework
+flask
+flask-cors
+
+# Machine Learning & AI
+torch
+torchvision
+ultralytics
+transformers
+
+# Data Processing
+numpy
+librosa
+pillow
