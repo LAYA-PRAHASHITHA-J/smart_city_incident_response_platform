@@ -139,6 +139,6 @@ vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
 
 .env 
-/ai-service/venv
 
-/backend/config/database.js
+backend/config/database.js
+ai-service/venv/ 
