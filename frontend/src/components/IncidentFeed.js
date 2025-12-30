@@ -1,105 +1,278 @@
 // frontend/src/components/IncidentFeed.js
+
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   List,
   ListItem,
   ListItemText,
+  ListItemAvatar,
+  Avatar,
   Typography,
   Chip,
   Box,
+  Card,
+  CardContent,
   Divider,
   IconButton,
-  Tooltip
+  Tooltip,
+  Button
 } from '@mui/material';
-import { format } from 'date-fns';
-import VisibilityIcon from '@mui/icons-material/Visibility';
-import LocationOnIcon from '@mui/icons-material/LocationOn';
+import {
+  LocationOn as LocationIcon,
+  AccessTime as TimeIcon,
+  Person as PersonIcon,
+  Info as InfoIcon,
+  Visibility as VisibilityIcon
+} from '@mui/icons-material';
+import { formatDistanceToNow } from 'date-fns';
 
-const IncidentFeed = ({ incidents }) => {
+const IncidentFeed = ({ incidents, isCitizen = false, detailedView = false, user }) => {
   const navigate = useNavigate();
-
   const getStatusColor = (status) => {
-    return status === 'New' ? 'error' :
-           status === 'Acknowledged' ? 'warning' :
-           status === 'In Progress' ? 'info' :
-           status === 'Resolved' ? 'success' : 'default';
+    switch (status) {
+      case 'New':
+        return 'error';
+      case 'Acknowledged':
+        return 'warning';
+      case 'In Progress':
+        return 'info';
+      case 'Resolved':
+        return 'success';
+      default:
+        return 'default';
+    }
   };
 
-  const getPriorityColor = (priority) => {
-    return priority === 'Critical' ? 'error' :
-           priority === 'High' ? 'warning' :
-           priority === 'Medium' ? 'info' :
-           priority === 'Low' ? 'success' : 'default';
+  const getTypeIcon = (type) => {
+    switch (type) {
+      case 'Fire':
+        return '🔥';
+      case 'Accident':
+        return '🚗';
+      case 'Crime':
+        return '🚔';
+      case 'Medical':
+        return '🚑';
+      case 'Natural Disaster':
+        return '🌪️';
+      case 'Public Event':
+        return '🎉';
+      case 'Infrastructure Failure':
+        return '🚧';
+      default:
+        return '📋';
+    }
   };
 
-  const handleViewDetails = (id) => {
-    navigate(`/incident/${id}`);
+  // Check if incident was reported by current user
+  const isUserReport = (incident) => {
+    if (!user) return false;
+    return incident.reportedBy === user.username || incident.detectedBy === user.id;
   };
+
+  // Helper function to safely format coordinates
+  const formatCoordinate = (value) => {
+    if (value === null || value === undefined) return 'N/A';
+    const num = parseFloat(value);
+    return isNaN(num) ? 'N/A' : num.toFixed(4);
+  };
+
+  if (incidents.length === 0) {
+    return (
+      <Box sx={{ textAlign: 'center', py: 4 }}>
+        <Typography variant="body2" color="text.secondary">
+          {isCitizen 
+            ? 'No incidents reported in your area. Be the first to report an issue!'
+            : 'No incidents found matching your filters.'}
+        </Typography>
+      </Box>
+    );
+  }
+
+  if (detailedView) {
+    return (
+      <List>
+        {incidents.map((incident) => (
+          <Card key={incident.id} sx={{ mb: 2 }}>
+            <CardContent>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                  <Typography variant="h5" sx={{ mr: 1 }}>
+                    {getTypeIcon(incident.type)}
+                  </Typography>
+                  <Typography variant="h6" component="div">
+                    {incident.type}
+                  </Typography>
+                </Box>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  {isCitizen && isUserReport(incident) && (
+                    <Chip label="Your Report" size="small" color="primary" />
+                  )}
+                  <Chip 
+                    label={incident.status} 
+                    color={getStatusColor(incident.status)} 
+                    size="small"
+                  />
+                </Box>
+              </Box>
+              
+              <Typography variant="body2" sx={{ mt: 1, mb: 2 }}>
+                {incident.description}
+              </Typography>
+              
+              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mb: 2 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                  <LocationIcon fontSize="small" sx={{ mr: 0.5 }} />
+                  <Typography variant="body2">
+                    {formatCoordinate(incident.latitude)}, {formatCoordinate(incident.longitude)}
+                  </Typography>
+                </Box>
+                
+                <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                  <TimeIcon fontSize="small" sx={{ mr: 0.5 }} />
+                  <Typography variant="body2">
+                    {formatDistanceToNow(new Date(incident.createdAt), { addSuffix: true })}
+                  </Typography>
+                </Box>
+                
+                {isCitizen && (
+                  <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                    <PersonIcon fontSize="small" sx={{ mr: 0.5 }} />
+                    <Typography variant="body2">
+                      {isUserReport(incident) ? 'Reported by you' : 'Reported by community member'}
+                    </Typography>
+                  </Box>
+                )}
+              </Box>
+              
+              {!isCitizen && incident.reportedBy && (
+                <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                  <PersonIcon fontSize="small" sx={{ mr: 0.5 }} />
+                  <Typography variant="body2">
+                    Reported by: {incident.reportedBy}
+                  </Typography>
+                </Box>
+              )}
+
+              {incident.source && (
+                <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                  <InfoIcon fontSize="small" sx={{ mr: 0.5 }} />
+                  <Typography variant="body2">
+                    Source: {incident.source}
+                  </Typography>
+                </Box>
+              )}
+              
+              {!isCitizen && incident.respondingDepartments && (
+                <Box sx={{ mt: 1 }}>
+                  <Typography variant="body2" color="text.secondary">
+                    Responding Departments:
+                  </Typography>
+                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mt: 0.5 }}>
+                    {incident.respondingDepartments.map((dept) => (
+                      <Chip key={dept} label={dept} size="small" variant="outlined" />
+                    ))}
+                  </Box>
+                </Box>
+              )}
+
+              {/* View Details Button */}
+              <Box sx={{ mt: 2, display: 'flex', justifyContent: 'flex-end' }}>
+                <Button
+                  variant="contained"
+                  size="small"
+                  startIcon={<VisibilityIcon />}
+                  onClick={() => navigate(`/incident/${incident.id}`)}
+                >
+                  View Details
+                </Button>
+              </Box>
+            </CardContent>
+          </Card>
+        ))}
+      </List>
+    );
+  }
 
   return (
-    <List sx={{ width: '100%', maxHeight: 400, overflow: 'auto' }}>
-      {incidents.length === 0 ? (
-        <Typography variant="body2" sx={{ p: 2, textAlign: 'center' }}>
-          No incidents found
-        </Typography>
-      ) : (
-        incidents.map((incident, index) => (
-          <React.Fragment key={incident.id}>
-            <ListItem alignItems="flex-start" sx={{ flexDirection: 'column', alignItems: 'stretch' }}>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', width: '100%' }}>
-                <ListItemText
-                  primary={
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <Typography variant="subtitle2" component="span">
-                        {incident.title}
+    <List>
+      {incidents.map((incident) => (
+        <React.Fragment key={incident.id}>
+          <ListItem 
+            alignItems="flex-start"
+            sx={{ 
+              '&:hover': { bgcolor: 'action.hover' },
+              cursor: 'pointer'
+            }}
+          >
+            <ListItemAvatar>
+              <Avatar>
+                {getTypeIcon(incident.type)}
+              </Avatar>
+            </ListItemAvatar>
+            <ListItemText
+              primary={
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <Typography variant="subtitle1">
+                    {incident.type}
+                  </Typography>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    {isCitizen && isUserReport(incident) && (
+                      <Chip label="Your Report" size="small" color="primary" />
+                    )}
+                    <Chip 
+                      label={incident.status} 
+                      color={getStatusColor(incident.status)} 
+                      size="small"
+                    />
+                  </Box>
+                </Box>
+              }
+              secondary={
+                <Box>
+                  <Typography variant="body2" color="text.primary">
+                    {incident.description.length > 100 
+                      ? `${incident.description.substring(0, 100)}...` 
+                      : incident.description}
+                  </Typography>
+                  <Box sx={{ display: 'flex', alignItems: 'center', mt: 1 }}>
+                    <LocationIcon fontSize="small" sx={{ mr: 0.5 }} />
+                    <Typography variant="caption" sx={{ mr: 2 }}>
+                      {formatCoordinate(incident.latitude)}, {formatCoordinate(incident.longitude)}
+                    </Typography>
+                    <TimeIcon fontSize="small" sx={{ mr: 0.5 }} />
+                    <Typography variant="caption">
+                      {formatDistanceToNow(new Date(incident.createdAt), { addSuffix: true })}
+                    </Typography>
+                  </Box>
+                  {!isCitizen && incident.reportedBy && (
+                    <Box sx={{ display: 'flex', alignItems: 'center', mt: 0.5 }}>
+                      <PersonIcon fontSize="small" sx={{ mr: 0.5 }} />
+                      <Typography variant="caption">
+                        Reported by: {incident.reportedBy}
                       </Typography>
-                      <Chip label={incident.type} size="small" color="primary" />
                     </Box>
-                  }
-                  secondary={
-                    <Box>
-                      <Typography variant="body2" color="text.secondary" component={"span"}>
-                        {format(new Date(incident.createdAt), 'MMM dd, yyyy HH:mm')}
-                      </Typography>
-                      <Box sx={{ display: 'flex', alignItems: 'center', mt: 0.5, gap: 1 }}>
-                        <Chip 
-                          label={incident.status} 
-                          size="small" 
-                          color={getStatusColor(incident.status)} 
-                        />
-                        <Chip 
-                          label={incident.priority} 
-                          size="small" 
-                          color={getPriorityColor(incident.priority)} 
-                        />
-                      </Box>
-                      {incident.address && (
-                        <Box sx={{ display: 'flex', alignItems: 'center', mt: 0.5 }}>
-                          <LocationOnIcon fontSize="small" color="action" />
-                          <Typography variant="body2" color="text.secondary">
-                            {incident.address}
-                          </Typography>
-                        </Box>
-                      )}
-                    </Box>
-                  }
-                />
-                <Tooltip title="View Details">
-                  <IconButton 
-                    edge="end" 
-                    aria-label="view" 
-                    onClick={() => handleViewDetails(incident.id)}
-                  >
-                    <VisibilityIcon />
-                  </IconButton>
-                </Tooltip>
-              </Box>
-            </ListItem>
-            {index < incidents.length - 1 && <Divider variant="inset" component="li" />}
-          </React.Fragment>
-        ))
-      )}
+                  )}
+                  {isCitizen && isUserReport(incident) && (
+                    <Chip label="Your Report" size="small" color="primary" sx={{ mt: 1 }} />
+                  )}
+                </Box>
+              }
+            />
+            <Button
+              variant="outlined"
+              size="small"
+              startIcon={<VisibilityIcon />}
+              onClick={() => navigate(`/incident/${incident.id}`)}
+              sx={{ ml: 2, mt: 1 }}
+            >
+              View
+            </Button>
+          </ListItem>
+          <Divider variant="inset" component="li" />
+        </React.Fragment>
+      ))}
     </List>
   );
 };

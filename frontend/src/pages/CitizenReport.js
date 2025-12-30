@@ -19,6 +19,8 @@ import { PhotoCamera, LocationOn } from '@mui/icons-material';
 import { useAuth } from '../contexts/AuthContext';
 import incidentService from '../services/incidentService';
 
+
+
 const CitizenReport = () => {
   const navigate = useNavigate();
   const { user } = useAuth(); // To get the user's name
@@ -84,8 +86,10 @@ const CitizenReport = () => {
       const incidentData = {
         ...formData,
         source: 'Citizen App',
-        priority: 'Medium' // Default priority for citizen reports
+        priority: 'Medium',
+        detectedBy: user?.id // <-- this links incident to this user!
       };
+
 
       const response = await incidentService.createIncident(incidentData, mediaFile);
       setSuccess('Incident reported successfully! It has been sent to the relevant department.');
@@ -108,6 +112,11 @@ const CitizenReport = () => {
   return (
     <Container component="main" maxWidth="md">
       <Paper elevation={3} sx={{ p: 4, mt: 4 }}>
+      <Box sx={{ mb: 2, display: 'flex', gap: 2 }}>
+        <Button variant="outlined" onClick={() => navigate('/dashboard')}>Back to Dashboard</Button>
+        <Button variant="outlined" onClick={() => navigate('/my-incidents')}>My Incidents</Button>
+      </Box>
+
         <Typography variant="h4" gutterBottom>
           Report an Incident
         </Typography>

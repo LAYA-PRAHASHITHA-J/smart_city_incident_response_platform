@@ -12,6 +12,7 @@ const incidentService = {
     
     if (filters.type) params.append('type', filters.type);
     if (filters.status) params.append('status', filters.status);
+    if (filters.viewMode) params.append('viewMode', filters.viewMode);
     if (filters.limit) params.append('limit', filters.limit);
     if (filters.offset) params.append('offset', filters.offset);
     

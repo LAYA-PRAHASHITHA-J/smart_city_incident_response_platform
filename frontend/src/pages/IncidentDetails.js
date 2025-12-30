@@ -16,7 +16,6 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
-  Modal,
   List,
   ListItem,
   ListItemText,
@@ -34,6 +33,13 @@ const IncidentDetails = () => {
   const { user, loading } = useAuth();
   const [incident, setIncident] = useState(null);
   const [error, setError] = useState('');
+  
+  // CHANGE: Added a dedicated loading state for the incident data fetch.
+  const [incidentLoading, setIncidentLoading] = useState(true);
+  
+  // CHANGE: Added state for user feedback messages (success/error).
+  const [feedback, setFeedback] = useState({ message: '', severity: '' });
+
   const [statusDialogOpen, setStatusDialogOpen] = useState(false);
   const [newStatus, setNewStatus] = useState('');
   const [assignDialogOpen, setAssignDialogOpen] = useState(false);
@@ -51,9 +57,12 @@ const IncidentDetails = () => {
 
     const fetchIncident = async () => {
       if (!id) return;
+      
+      // CHANGE: Set loading state to true when starting the fetch.
+      setIncidentLoading(true);
+      setError('');
 
       try {
-        // --- REMOVED setLoading(true) ---
         const data = await incidentService.getIncidentById(id);
         setIncident(data);
       } catch (err) {
@@ -66,7 +75,8 @@ const IncidentDetails = () => {
           setError('Failed to load incident details.');
         }
       } finally {
-        // --- REMOVED setLoading(false) ---
+        // CHANGE: Set loading state to false after the fetch completes (or fails).
+        setIncidentLoading(false);
       }
     };
 
@@ -93,8 +103,12 @@ const IncidentDetails = () => {
       await incidentService.updateIncidentStatus(id, newStatus);
       setIncident(prev => ({ ...prev, status: newStatus }));
       setStatusDialogOpen(false);
+      // CHANGE: Provide success feedback to the user.
+      setFeedback({ message: 'Status updated successfully!', severity: 'success' });
     } catch (error) {
       console.error('Error updating incident status:', error);
+      // CHANGE: Provide error feedback to the user.
+      setFeedback({ message: 'Failed to update status.', severity: 'error' });
     }
   };
 
@@ -103,8 +117,12 @@ const IncidentDetails = () => {
       await incidentService.assignIncident(id, assignedTo);
       setIncident(prev => ({ ...prev, assignedTo }));
       setAssignDialogOpen(false);
+      // CHANGE: Provide success feedback to the user.
+      setFeedback({ message: 'Incident assigned successfully!', severity: 'success' });
     } catch (error) {
       console.error('Error assigning incident:', error);
+      // CHANGE: Provide error feedback to the user.
+      setFeedback({ message: 'Failed to assign incident.', severity: 'error' });
     }
   };
 
@@ -119,6 +137,16 @@ const IncidentDetails = () => {
   if (!user) {
     navigate('/login');
     return null;
+  }
+
+  // CHANGE: Added a check for the incident-specific loading state.
+  // This provides a better UX by showing a spinner while data is being fetched.
+  if (incidentLoading) {
+    return (
+      <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
+        <CircularProgress />
+      </Box>
+    );
   }
 
   if (error) {
@@ -159,19 +187,35 @@ const IncidentDetails = () => {
 
   return (
     <Box sx={{ flexGrow: 1, p: 2 }}>
+      {/* CHANGE: Added an Alert component to display feedback messages to the user. */}
+      {feedback.message && (
+        <Alert 
+          severity={feedback.severity} 
+          sx={{ mb: 2 }} 
+          onClose={() => setFeedback({ message: '', severity: '' })}
+        >
+          {feedback.message}
+        </Alert>
+      )}
+
       <Paper sx={{ p: 3 }}>
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
           <Typography variant="h4" component="h1">
             {incident.title}
           </Typography>
           <Box>
-            <Button variant="outlined" sx={{ mr: 1 }} onClick={() => setStatusDialogOpen(true)}>
-              Update Status
-            </Button>
-            {(user.role === 'Admin' || user.role === incident.type) && (
-              <Button variant="outlined" sx={{ mr: 1 }} onClick={() => setAssignDialogOpen(true)}>
-                Assign
-              </Button>
+            {/* Only show action buttons to department staff and admins, not to citizens */}
+            {user.role !== 'Citizen' && (
+              <>
+                <Button variant="outlined" sx={{ mr: 1 }} onClick={() => setStatusDialogOpen(true)}>
+                  Update Status
+                </Button>
+                {(user.role === 'Admin' || user.role === incident.type) && (
+                  <Button variant="outlined" sx={{ mr: 1 }} onClick={() => setAssignDialogOpen(true)}>
+                    Assign
+                  </Button>
+                )}
+              </>
             )}
             <Button variant="outlined" onClick={() => navigate('/dashboard')}>
               Back to Dashboard
@@ -280,14 +324,14 @@ const IncidentDetails = () => {
         </Grid>
       </Paper>
 
+      {/* CHANGE: Corrected the Dialog structure by removing the redundant Modal wrapper. */}
       {/* Status Update Dialog */}
-      <Modal
-      open={statusDialogOpen}
-      onClose={() => setStatusDialogOpen(false)}
-      aria-labelledby="status-update-dialog-title"
-      aria-describedby="status-update-dialog-description"
-    >
-      <Dialog open={statusDialogOpen} onClose={() => setStatusDialogOpen(false)}>
+      <Dialog
+        open={statusDialogOpen}
+        onClose={() => setStatusDialogOpen(false)}
+        aria-labelledby="status-update-dialog-title"
+        aria-describedby="status-update-dialog-description"
+      >
         <DialogTitle id="status-update-dialog-title">Update Incident Status</DialogTitle>
         <DialogContent>
           <FormControl fullWidth sx={{ mt: 2 }}>
@@ -311,7 +355,7 @@ const IncidentDetails = () => {
           <Button onClick={handleStatusUpdate}>Update</Button>
         </DialogActions>
       </Dialog>
-    </Modal>
+
       {/* Assign Incident Dialog */}
       <Dialog open={assignDialogOpen} onClose={() => setAssignDialogOpen(false)}>
         <DialogTitle>Assign Incident</DialogTitle>

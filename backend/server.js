@@ -11,6 +11,8 @@ const alertRoutes = require('./routes/alerts');
 const { createServer } = require('http');
 const { Server } = require('socket.io');
 const Alert = require('./models/Alert');
+const User = require('./models/User');
+const Incident = require('./models/Incident');
 
 
 // Initialize express app
@@ -32,10 +34,12 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // Routes
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.use('/api/auth', authRoutes);
 app.use('/api/incidents', incidentRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/alerts', alertRoutes);
+
 
 // Socket.IO connection handling
 io.on('connection', (socket) => {
@@ -70,3 +74,5 @@ sequelize.sync().then(() => {
 }).catch(err => {
   console.error('Unable to connect to the database:', err);
 });
+User.hasMany(Incident, { foreignKey: 'detectedBy', as: 'incidents' });
+Incident.belongsTo(User, { foreignKey: 'detectedBy', as: 'detector' });

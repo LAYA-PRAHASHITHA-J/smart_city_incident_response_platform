@@ -44,6 +44,10 @@ const Incident = sequelize.define('Incident', {
     type: DataTypes.STRING,
     allowNull: true
   },
+  detectedBy: {
+    type: DataTypes.INTEGER,
+    allowNull: false
+  },
   source: {
     type: DataTypes.ENUM('CCTV', 'Citizen App', 'Sensor', 'Manual'),
     allowNull: false
@@ -73,5 +77,6 @@ const Incident = sequelize.define('Incident', {
     allowNull: true
   }
 });
+
 
 module.exports = Incident;

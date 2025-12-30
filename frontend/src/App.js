@@ -12,6 +12,7 @@ import Dashboard from './pages/Dashboard';
 import IncidentDetails from './pages/IncidentDetails';
 import Layout from './components/Layout';
 import CitizenReport from './pages/CitizenReport';
+import MyIncidents from './pages/MyIncidents';
 
 const theme = createTheme({
   palette: {
@@ -41,6 +42,7 @@ function App() {
                   <Route index element={<Navigate to="/dashboard" replace />} />
                   <Route path="dashboard" element={<Dashboard />} />
                   <Route path="incident/:id" element={<IncidentDetails />} />
+                  <Route path="my-incidents" element={<MyIncidents />} />
                 </Route>
               </Routes>
             </Router>

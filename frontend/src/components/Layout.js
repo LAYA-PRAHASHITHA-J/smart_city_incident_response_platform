@@ -25,6 +25,7 @@ import {
   Menu as MenuIcon,
   Dashboard as DashboardIcon,
   ReportProblem as ReportIcon,
+  Assignment as AssignmentIcon,
   ExitToApp as LogoutIcon,
   AccountCircle
 } from '@mui/icons-material';
@@ -105,6 +106,20 @@ const Layout = () => {
             </ListItemButton>
           </ListItem>
         ))}
+        <Divider sx={{ my: 1 }} />
+
+        <ListItem disablePadding>
+          <ListItemButton
+            selected={location.pathname === '/my-incidents'}
+            onClick={() => navigate('/my-incidents')}
+          >
+            <ListItemIcon>
+              <AssignmentIcon />
+            </ListItemIcon>
+            <ListItemText primary="My Incidents" />
+          </ListItemButton>
+        </ListItem>
+
       </List>
     </div>
   );
